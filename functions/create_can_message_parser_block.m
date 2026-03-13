@@ -1,4 +1,4 @@
-function subsystemHandle = create_can_message_parser_block(target_message, model_name, can_message_parser_block_position)
+function subsystemHandle = create_can_message_parser_block(target_message, model_name, can_message_parser_block_position, sfunc_module_suffix)
     % 根据DBC消息结构体创建Simulink子系统
     % 输入:
     %   target_message - DBC消息结构体
@@ -43,8 +43,8 @@ function subsystemHandle = create_can_message_parser_block(target_message, model
         signal_parser_block_name = signal_info.signal_name;
         y_pos = block_height + (i-1) * (block_height + block_distance);  % 从初始位置开始，每个模块占用高度+距离的空间
         signal_parser_block_position = [70 y_pos 270 y_pos+block_height];
-        add_signal_parser_block(subsystem_path, signal_parser_block_name, signal_parser_block_position);
-        % connect_ports(subsystem_path, inport_name, 1, signal_parser_block_name, 1)
+        add_signal_parser_block(subsystem_path, signal_parser_block_name, signal_parser_block_position, sfunc_module_suffix);
+    
                 
         % 创建Outport - 创建Outport模块高度为10，居中对齐Signal Parser模块
         port_number = i;
@@ -161,10 +161,15 @@ function add_inport(subsystem_path, inport_name, inport_position)
     % set_param(inport_path, 'Name', 'input_data');
 end
 
-function add_signal_parser_block(subsystem_path, block_name, block_position)
+function add_signal_parser_block(subsystem_path, block_name, block_position, sfunc_module_suffix)
     block_path = [subsystem_path '/' block_name];
     add_block('hilite_simulink_libs/Communication Message Parser/Signal Parser', block_path);
     set_param(block_path, 'Position', block_position);
+
+    sfuc_module = get_param(block_path, 'SFunctionModules');
+    sfuc_module = strsplit(sfuc_module, '.');
+    sfuc_module = [sfuc_module{1} sfunc_module_suffix];
+    set_param(block_path, 'SFunctionModules', sfuc_module);
 end
 
 function add_outport(subsystem_path, port_number, outport_name, outport_position)
@@ -195,10 +200,10 @@ function add_signal_param_blocks(subsystem_path, model_workspace, signal_parser_
         is_signed = true;
     end
 
-    add_signal_param_block(subsystem_path, model_workspace, signal_parser_block_name, [msg_id_signal_name '_isSigned'], 'bool', is_signed, 4);
+    add_signal_param_block(subsystem_path, model_workspace, signal_parser_block_name, [msg_id_signal_name '_isSigned'], 'boolean', is_signed, 4);
     add_signal_param_block(subsystem_path, model_workspace, signal_parser_block_name, [msg_id_signal_name '_factor'], 'double', signal_info.factor, 5);
     add_signal_param_block(subsystem_path, model_workspace, signal_parser_block_name, [msg_id_signal_name '_offset'], 'double', signal_info.offset, 6);
-    add_signal_param_block(subsystem_path, model_workspace, signal_parser_block_name, [msg_id_signal_name '_isBigEndian'], 'bool', signal_info.byte_order, 7);
+    add_signal_param_block(subsystem_path, model_workspace, signal_parser_block_name, [msg_id_signal_name '_isBigEndian'], 'boolean', signal_info.byte_order, 7);
 end
 
 function add_signal_param_block(subsystem_path, model_workspace, signal_parser_block_name, param_block_name, parameter_type, parameter_value, port_number)
